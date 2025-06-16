@@ -6,11 +6,11 @@ import time
 
 
 # Save the animation as a GIF named
-fileName = '/home/trey/Desktop/school/thesisStuff/planarSensor.gif'
+fileName = '/home/trey/Desktop/school/thesisStuff/TI-LGAD_animation/planarSensor.gif'
 
 # Graphics params
 numFrames = 100 #was 1000
-fps = 20 # was 60
+fps = 10 
 
 #Protons are red, Neutrons are grey, electrons are yellow, holes are blue, 
 pionColor = 'purple'
@@ -27,16 +27,32 @@ pxPitch = 55 #μm, distance from center of one pixel to the next
 implantSizeX = 35
 implantSizeY = 5
 
-## doping layers
+# Trench dimensions
+numTrenches = 1
+trenchDepth = 40 #μm
+trenchWidth = 1 #μm
+trenchGap = 5 #μm
+trenchColor = "black"
+
+## doping layer thicknesses.
+## layers in order from sensor 'backside' to sensor 'frontside' except for the bulk, since that requires p++ thickness apriori
 metalizationLayer = 5 #μm, thickness of the metalization layer
-metalizationContactLayer = 10 #μm, thickness of the metalization contact layer
+metalizationContactLayer = 10 #μm, thickness of the metalization contact "layer' that extends to the n++ layer
 insulationLayer = 5 #μm, thickness of the insulation layer
 nPlusPlusLayer = 5 #μm, thickness of the n++ layer
 pPlusGainLayer = 10 #μm, thickness of the p+ layer
+pPlusGainWidth = 35 #μm, width of the p+ gain implant
 pPlusPlusLayer = 5 #μm, thickness of the p++ layer
+pBulkLayer = int(thick - (pPlusPlusLayer + pPlusGainLayer + nPlusPlusLayer)) #μm, whatever's leftover after the other layers fill the 100μm
 
-#the bulk is from the top of the p++ to the bottom of the p+
-#! pBulk = thick - (pPlusPlusLayer + pPlusGainLayer + nPlusPlusLayer)
+## doping layer colors
+metalizationColor = "silver"
+insulationColor = "olivedrab"
+nPlusPlusColor = "orange"
+pPlusPlusColor = "lightcoral"
+pPlusGainColor = "turquoise"
+pBulkColor = "cadetblue"
+
 
 # Record the start time using perf_counter
 start_time = time.perf_counter()
@@ -56,22 +72,54 @@ ax.set_xticks(np.linspace(0, width, 7))
 ax.set_yticks(np.linspace(0, thick, 6))
 ax.set_aspect('equal')
 
+
+
 # Add a rectangular border
 border = patches.Rectangle((0, 0), width, thick, linewidth=2, edgecolor='black', facecolor='none')
 ax.add_patch(border)
 
+
+
 # (x position, y pos), xSize, ySize like
 # ax.add_patch(patches.Rectangle((55*2.5-implantSizeX/2, thick-implantSizeY), implantSizeX, implantSizeY, color='teal'))
 
-#add the p++ as the bottom layer
-ax.add_patch(patches.Rectangle((0, thick-implantSizeY), width, implantSizeY, color='teal'))
+#drawing layers
+ax.add_patch(patches.Rectangle((0, thick-metalizationLayer), width, metalizationLayer, color=metalizationColor))
+ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer)), width, insulationLayer, color=insulationColor))
+ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer)), width, nPlusPlusLayer, color=nPlusPlusColor))
+ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pBulkLayer)), width, pBulkLayer, color=pBulkColor))
 
-#make 3 px across the top of the ani frame
+#calculate the y spacing once
+ySpacePgain = thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer)
+
+#3 gain implants
 for pixNum in range(3):
-    ax.add_patch(patches.Rectangle(((pixNum*pxPitch)+(implantSizeX/2), thick-implantSizeY), implantSizeX, implantSizeY, color='teal'))
+    ax.add_patch(patches.Rectangle(((pixNum*pxPitch)+(implantSizeX/2), ySpacePgain), pPlusGainWidth, pPlusGainLayer, color=pPlusGainColor))
+    #ax.add_patch(patches.Rectangle(((pixNum*pxPitch)+(implantSizeX/2), thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+implantSizeY)), implantSizeX, implantSizeY, color='teal'))
+
+# # Draw the trenches
+# for trenchNum in range(numTrenches):
+#     ax.add_patch(patches.Rectangle((trenchNum*(trenchWidth+trenchGap), thick-(metalizationLayer+insulationLayer+nPlusPlusLayer)), trenchWidth, trenchDepth, color=trenchColor))
+
+# #Draw the metal contact to the n++ layer over the insulation layer
+# for contact in range(numTrenches):
+#     #Left contact
+#     ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer)), width, metalizationContactLayer, color=metalizationColor))
+#     #Right contact 
+#     ax.add_patch(patches.Rectangle((width-metalizationContactLayer, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer)), metalizationContactLayer, nPlusPlusLayer, color=metalizationColor))
 
 
 
+#add the p++ as the bottom layer
+ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+pPlusGainLayer+pBulkLayer)), width, implantSizeY, color=pPlusPlusColor))
+
+## doping layer labeling
+ax.annotate("metalization", xy=(1, thick-metalizationLayer/2), color="k", fontsize=8, ha='left', va='center')
+ax.annotate('insulation', xy=(1, thick-(metalizationLayer+insulationLayer/2)), color='black', fontsize=8, ha='left', va='center')
+ax.annotate('n++', xy=(1, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer/2)), color='black', fontsize=8, ha='left', va='center')
+ax.annotate('p+ (gain)', xy=(1, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer/2)), color='black', fontsize=8, ha='left', va='center')
+ax.annotate('p- (bulk)', xy=(1, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer+35)), color='black', fontsize=8, ha='left', va='center')
+ax.annotate('p++', xy=(1, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer+70+(pPlusPlusLayer/2))), color='black', fontsize=8, ha='left', va='center')
 
 # Initialize the purple dot at starting position
 pion, = ax.plot([], [], 'o', color=pionColor, markersize=10)
