@@ -5,8 +5,8 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 import time
 
 
-# Save the animation as a GIF named
-fileName = '/home/trey/Desktop/school/thesisStuff/TI-LGAD_animation/planarSensor.gif'
+# Save the animation as a GIF in the folder
+filePath = '/home/trey/Desktop/school/thesisStuff/TI-LGAD_animation/'
 
 # Graphics params
 numFrames = 100 #was 1000
@@ -24,8 +24,8 @@ width = 180 #3 px wide + a lil extra
 pxPitch = 55 #μm, distance from center of one pixel to the next
 
 #dummy doping layers for formatting
-implantSizeX = 35
-implantSizeY = 5
+#implantSizeX = 35
+#implantSizeY = 5
 
 # Trench dimensions
 numTrenches = 1
@@ -33,6 +33,12 @@ trenchDepth = 40 #μm
 trenchWidth = 1 #μm
 trenchGap = 5 #μm
 trenchColor = "black"
+
+# name the files appropriately based on the number of trenches
+if numTrenches == 1:
+    fileName = f"{filePath}1TR-LGAD.gif"
+elif numTrenches == 2:
+    fileName = f"{filePath}2TR-LGAD.gif"
 
 ## doping layer thicknesses.
 ## layers in order from sensor 'backside' to sensor 'frontside' except for the bulk, since that requires p++ thickness apriori
@@ -92,14 +98,17 @@ ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+nPlu
 #calculate the y spacing once
 ySpacePgain = thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer)
 
-#3 gain implants
+#3 pixel loop
 for pixNum in range(3):
-    ax.add_patch(patches.Rectangle(((pixNum*pxPitch)+(implantSizeX/2), ySpacePgain), pPlusGainWidth, pPlusGainLayer, color=pPlusGainColor))
-    #ax.add_patch(patches.Rectangle(((pixNum*pxPitch)+(implantSizeX/2), thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+implantSizeY)), implantSizeX, implantSizeY, color='teal'))
+    ax.add_patch(patches.Rectangle(((pixNum*pxPitch)+(pPlusGainWidth/2), ySpacePgain), pPlusGainWidth, pPlusGainLayer, color=pPlusGainColor))
+    
+    #no need for trench 0 to make labelling harder
+    if pixNum>0 and numTrenches == 1:
+        ax.add_patch(patches.Rectangle((pixNum*pPlusGainWidth+pixNum*pxPitch/(pixNum+1), thick-trenchDepth), trenchWidth, trenchDepth, color=trenchColor)) #!!! Fix the magic number here
+    # sauce: https://www.mdpi.com/sensors/sensors-23-06225/article_deploy/html/images/sensors-23-06225-g001.png
+    
+    #elif pixNum>0 and numTrenches ==2:
 
-# # Draw the trenches
-# for trenchNum in range(numTrenches):
-#     ax.add_patch(patches.Rectangle((trenchNum*(trenchWidth+trenchGap), thick-(metalizationLayer+insulationLayer+nPlusPlusLayer)), trenchWidth, trenchDepth, color=trenchColor))
 
 # #Draw the metal contact to the n++ layer over the insulation layer
 # for contact in range(numTrenches):
@@ -109,17 +118,19 @@ for pixNum in range(3):
 #     ax.add_patch(patches.Rectangle((width-metalizationContactLayer, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer)), metalizationContactLayer, nPlusPlusLayer, color=metalizationColor))
 
 
-
 #add the p++ as the bottom layer
-ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+pPlusGainLayer+pBulkLayer)), width, implantSizeY, color=pPlusPlusColor))
+ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+pPlusGainLayer+pBulkLayer)), width, pPlusPlusLayer, color=pPlusPlusColor))
+
+
+
 
 ## doping layer labeling
 ax.annotate("metalization", xy=(1, thick-metalizationLayer/2), color="k", fontsize=8, ha='left', va='center')
 ax.annotate('insulation', xy=(1, thick-(metalizationLayer+insulationLayer/2)), color='black', fontsize=8, ha='left', va='center')
 ax.annotate('n++', xy=(1, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer/2)), color='black', fontsize=8, ha='left', va='center')
 ax.annotate('p+ (gain)', xy=(1, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer/2)), color='black', fontsize=8, ha='left', va='center')
-ax.annotate('p- (bulk)', xy=(1, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer+35)), color='black', fontsize=8, ha='left', va='center')
-ax.annotate('p++', xy=(1, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer+70+(pPlusPlusLayer/2))), color='black', fontsize=8, ha='left', va='center')
+ax.annotate('p- (bulk)', xy=(1, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pBulkLayer/2)), color='black', fontsize=8, ha='left', va='center')
+ax.annotate('p++', xy=(1, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pBulkLayer+pPlusPlusLayer/2)), color='black', fontsize=8, ha='left', va='center')
 
 # Initialize the purple dot at starting position
 pion, = ax.plot([], [], 'o', color=pionColor, markersize=10)
