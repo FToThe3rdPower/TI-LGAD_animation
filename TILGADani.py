@@ -41,7 +41,7 @@ pxPitch = 55 #μm, distance from center of one pixel to the next
 pixelGap = 5 #μm
 
 # Trench parameters
-numTrenches = 2
+numTrenches = 1
 trenchDepth = 40 #μm
 trenchWidth = 1 #μm
 trenchColor = "black"
@@ -156,6 +156,10 @@ x_pose = 100-(thick-y_pose)*0.15-0.2
 y_posh = y_pose*1
 x_posh = 100-(thick-y_posh)*0.15+0.2
 
+# Thresholds where particles should be removed, the n++ and p++ layers
+nPlusPlusTop = thick - (metalizationLayer + insulationLayer + nPlusPlusLayer/2)  # middle of n++ layer
+pPlusPlusBottom = thick - (metalizationLayer + insulationLayer + nPlusPlusLayer + pBulkLayer + pPlusPlusLayer/2)  # middle of p++ layer
+
 # add a legend for the different particles
 ax.legend([pion, dotse[0], dotsh[0]], ['Pion', 'Electron', 'Hole'], loc='lower right')
 
@@ -168,26 +172,34 @@ x_data, y_data = [], []
 # Function to update the position of the purple dot
 def update(frame):
     x = 100 - frame * 3  # Move the dot horizontally
-    y = thick-frame*20  # Keep the dot vertically centered
+    y = thick - frame * 20  # Move the dot vertically
     x_data.append(x)
     y_data.append(y)
-    pion.set_data([x], [y]) # Pass x and y as lists
+    pion.set_data([x], [y])
     line.set_data(x_data, y_data)
-    if (frame<5):
+
+    if frame < 5:
         for i in range(n_dots):
-            dotse[i].set_data([1000],[1000])
-            dotsh[i].set_data([1000],[1000])
+            dotse[i].set_data([1000], [1000])  # hide electrons
+            dotsh[i].set_data([1000], [1000])  # hide holes
     else:
         for i in range(n_dots):
-            y_pose[i]=y_pose[i]+0.6 # electrons move 3 times as fast as holes
-            y_posh[i]=y_posh[i]-0.2
-            if y_pose[i]>thick:
-                y_pose[i]=1000
-            if y_posh[i]<1:
-                y_posh[i]=1000
-            dotse[i].set_data([x_pose[i]],[y_pose[i]])
-            dotsh[i].set_data([x_posh[i]],[y_posh[i]])
-    return pion,line#,dots
+            # Update electron
+            y_pose[i] += 0.6  # electrons go downward
+            if y_pose[i] > nPlusPlusTop:
+                dotse[i].set_data([1000], [1000])  # remove electron
+            else:
+                dotse[i].set_data([x_pose[i]], [y_pose[i]])
+
+            # Update hole
+            y_posh[i] -= 0.2  # holes go upward
+            if y_posh[i] < pPlusPlusBottom:
+                dotsh[i].set_data([1000], [1000])  # remove hole
+            else:
+                dotsh[i].set_data([x_posh[i]], [y_posh[i]])
+
+    return pion, line, *dotse, *dotsh
+
 
 # Create the animation
 ani = FuncAnimation(fig, update, frames=np.arange(numFrames), blit=True)
