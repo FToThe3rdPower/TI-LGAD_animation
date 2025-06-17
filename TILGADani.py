@@ -18,6 +18,8 @@ filePath = '/home/trey/Desktop/school/thesisStuff/TI-LGAD_animation/'
 numFrames = 100 #was 1000
 fps = 10
 labelIndent = 10 #μm, indent for the layer labels so they sit in what they label
+trenchLabelX = 50
+trenchLabelY = 60
 
 # particle coloring
 pionColor = 'purple'
@@ -41,7 +43,7 @@ pxPitch = 55 #μm, distance from center of one pixel to the next
 pixelGap = 5 #μm
 
 # Trench parameters
-numTrenches = 2
+numTrenches = 1 #single or double, your choice
 trenchDepth = 40 #μm
 trenchWidth = 1 #μm
 trenchColor = "black"
@@ -80,18 +82,18 @@ ax.set_yticks(np.linspace(0, thick, 5))
 ax.set_aspect('equal')
 
 
-# Add a rectangular border
+# Adding a rectangular border
 border = patches.Rectangle((0, 0), width, thick, linewidth=2, edgecolor='black', facecolor='none')
 ax.add_patch(border)
 
 
-#drawing layers
+# Drawing basic layers
 ax.add_patch(patches.Rectangle((0, thick-metalizationLayer), width, metalizationLayer, color=metalizationColor))
 ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer)), width, insulationLayer, color=insulationColor))
 ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer)), width, nPlusPlusLayer, color=nPlusPlusColor))
 ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pBulkLayer)), width, pBulkLayer, color=pBulkColor))
 
-#calculate the y spacing once
+# Calculate the y spacing
 ySpacePgain = thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer)
 
 # 3 pixel drawing loop
@@ -113,7 +115,11 @@ for pixNum in range(3):
 
     # Add trench in every gap (i.e., after every implant except the last)
     if numTrenches == 1 and pixNum < 2:
+        # naming and titling
         fileName = f"{filePath}1TR-LGAD.gif"
+        plt.title("Single trench LGAD")
+        ax.annotate("Trench", xy=(trenchLabelX, trenchLabelY), fontsize=10, ha='right', va='bottom', color='black')
+        ax.annotate("", xy=(trenchLabelX+12, trenchLabelY), xytext=(trenchLabelX, trenchLabelY), arrowprops=dict(arrowstyle="->", color='black'))
 
         # Position the trench in the center of the 5μm gap between implants
         trenchX = implantX + pxPitch + (pixelGap - trenchWidth) / 2
@@ -123,6 +129,9 @@ for pixNum in range(3):
     
     elif numTrenches == 2 and pixNum < 2:
         fileName = f"{filePath}2TR-LGAD.gif"
+        plt.title("Double trench LGAD")
+        ax.annotate("Trenches", xy=(trenchLabelX, trenchLabelY), fontsize=10, ha='right', va='bottom', color='black')
+        ax.annotate("", xy=(trenchLabelX+11, trenchLabelY), xytext=(trenchLabelX, trenchLabelY), arrowprops=dict(arrowstyle="->", color='black'))
         gapStartX = implantX + pxPitch  # Start of the 5μm gap
         trench1X = gapStartX + 1  # First trench 1 μm into the gap
         trench2X = trench1X + trenchWidth + 1  # Second trench after 1 μm spacing
@@ -141,6 +150,8 @@ ax.annotate('n++', xy=(labelIndent, thick-(metalizationLayer+insulationLayer+nPl
 ax.annotate('p+ (gain)', xy=(labelIndent, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer/2)), color='black', fontsize=8, ha='left', va='center')
 ax.annotate('p- (bulk)', xy=(labelIndent, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pBulkLayer/2)), color='black', fontsize=8, ha='left', va='center')
 ax.annotate('p++', xy=(labelIndent, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pBulkLayer+pPlusPlusLayer/2)), color='black', fontsize=8, ha='left', va='center')
+
+
 
 # Initialize the purple dot at starting position
 pion, = ax.plot([], [], 'o', color=pionColor, markersize=10)
