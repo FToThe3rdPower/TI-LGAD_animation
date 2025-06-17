@@ -37,6 +37,10 @@ pBulkColor = "mistyrose"
 
 # 'Sim' parameters
 n_dots = 15 # number of electrons and holes to animate
+avalancheDots = 5 # number of avalanche dots to animate
+dotVelocity = 0.6 # the drift velocity for e- in the bulk
+gainVelocityCoeff = 2 # multiplies the dotVelocity when the electron hits the gain region
+holeVelocityCoeff = 0.3 #how much slower the holes go
 thick = 100 # penetration depth AND sensor thickness
 width = 185 #3 px wide + 5 in-between +5 on each side
 pxPitch = 55 #μm, distance from center of one pixel to the next
@@ -161,6 +165,18 @@ dotse = [ax.plot([], [], 'o', color=electronColor, markersize=3)[0] for _ in ran
 # now the holes
 dotsh = [ax.plot([], [], 'o', markersize=5, markerfacecolor='none', markeredgewidth=2, markeredgecolor=holeColor)[0] for _ in range(n_dots)]
 
+# ski patrol
+has_avalanched = [False] * n_dots  # Track whether each electron has avalanched
+
+# Avalanche storage
+av_x_e, av_y_e = [], []  # electrons
+av_x_h, av_y_h = [], []  # holes
+
+# Initialize the avalanche dots for electrons and holes
+av_dots_e = [ax.plot([], [], 'o', color=electronColor, markersize=3)[0] for _ in range(avalancheDots)]
+av_dots_h = [ax.plot([], [], 'o', markersize=5, markerfacecolor='none', markeredgewidth=2, markeredgecolor=holeColor)[0] for _ in range(n_dots)]
+
+
 # Randomly initialize starting positions and velocities for the dots
 y_pose = np.random.uniform(low=10, high=(thick-10), size=(n_dots))
 x_pose = 100-(thick-y_pose)*0.15-0.2
@@ -202,9 +218,9 @@ def update(frame):
         for i in range(n_dots):
             # Determine if electron is in the p+ gain layer
             if pPlusGainBottom <= y_pose[i] <= pPlusGainTop:
-                velocity_e = 1.2  # faster drift in gain layer
+                velocity_e = gainVelocityCoeff * dotVelocity  # faster drift in gain layer
             else:
-                velocity_e = 0.6  # normal drift elsewhere
+                velocity_e = dotVelocity  # normal drift elsewhere
 
             # Update electron position
             y_pose[i] += velocity_e
@@ -215,13 +231,48 @@ def update(frame):
                 dotse[i].set_data([x_pose[i]], [y_pose[i]])
 
             # Update hole
-            y_posh[i] -= 0.2
+            y_posh[i] -= (dotVelocity*holeVelocityCoeff)  # holes drift slower
             if y_posh[i] < pPlusPlusBottom:
                 dotsh[i].set_data([1000], [1000])  # remove hole
             else:
                 dotsh[i].set_data([x_posh[i]], [y_posh[i]])
 
-    return pion, line, *dotse, *dotsh
+            # Avalanche generation when entering gain layer
+            if (pPlusGainBottom <= y_pose[i] <= pPlusGainTop) and not has_avalanched[i]:
+                n_spawns = np.random.randint(1, (avalancheDots+1))
+                for _ in range(n_spawns):
+                    av_x_e.append(x_pose[i] + np.random.uniform(-1, 1))
+                    av_y_e.append(y_pose[i] + np.random.uniform(-1, 1))
+                    av_x_h.append(x_pose[i] + np.random.uniform(-1, 1))
+                    av_y_h.append(y_pose[i] + np.random.uniform(-1, 1))
+                has_avalanched[i] = True
+
+
+        # Animate avalanche electrons
+        for idx, dot in enumerate(av_dots_e):
+            if idx < len(av_x_e):
+                av_y_e[idx] += gainVelocityCoeff * dotVelocity  # faster drift in gain layer
+                if av_y_e[idx] > nPlusPlusTop:
+                    dot.set_data([1000], [1000])
+                else:
+                    dot.set_data([av_x_e[idx]], [av_y_e[idx]])
+            else:
+                dot.set_data([1000], [1000])
+
+        # Animate avalanche holes
+        for idx, dot in enumerate(av_dots_h):
+            if idx < len(av_x_h):
+                av_y_h[idx] -= (dotVelocity*holeVelocityCoeff)  # holes drift slower
+                if av_y_h[idx] < pPlusPlusBottom:
+                    dot.set_data([1000], [1000])
+                else:
+                    dot.set_data([av_x_h[idx]], [av_y_h[idx]])
+            else:
+                dot.set_data([1000], [1000])
+
+
+    return pion, line, *dotse, *dotsh, *av_dots_e, *av_dots_h
+
 
 
 # Create the animation
