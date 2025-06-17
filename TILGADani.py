@@ -37,7 +37,7 @@ pBulkColor = "mistyrose"
 
 # 'Sim' parameters
 n_dots = 15 # number of electrons and holes to animate
-avalancheDots = 10 # number of avalanche dots to animate
+avalancheDots = 10 # number of avalanche pairs to animate per original electron
 dotVelocity = 0.6 # the drift velocity for e- in the bulk
 gainVelocityCoeff = 2 # multiplies the dotVelocity when the electron hits the gain region
 holeVelocityCoeff = 0.3 #how much slower the holes go
@@ -47,7 +47,7 @@ pxPitch = 55 #μm, distance from center of one pixel to the next
 pixelGap = 5 #μm
 
 ## Trench parameters
-numTrenches = 2 #single or double, your choice
+numTrenches = 1 #single or double, your choice
 trenchDepth = 40 #μm
 trenchWidth = 1 #μm
 trenchColor = "black"
@@ -173,8 +173,10 @@ av_x_e, av_y_e = [], []  # electrons
 av_x_h, av_y_h = [], []  # holes
 
 # Initialize the avalanche dots for electrons and holes
-av_dots_e = [ax.plot([], [], 'o', color=electronColor, markersize=3)[0] for _ in range(avalancheDots)]
-av_dots_h = [ax.plot([], [], 'o', markersize=5, markerfacecolor='none', markeredgewidth=2, markeredgecolor=holeColor)[0] for _ in range(avalancheDots)]
+# av_dots_e = [ax.plot([], [], 'o', color=electronColor, markersize=3)[0] for _ in range(avalancheDots)]
+# av_dots_h = [ax.plot([], [], 'o', markersize=5, markerfacecolor='none', markeredgewidth=2, markeredgecolor=holeColor)[0] for _ in range(avalancheDots)]
+av_dots_e = []
+av_dots_h = []
 
 
 # Randomly initialize starting positions and velocities for the dots
@@ -232,13 +234,16 @@ def update(frame):
             inside_gain_region = (pPlusGainBottom <= y_pose[i] <= pPlusGainTop)
 
             if inside_gain_region and not has_avalanched[i]:
-                for _ in range(avalancheDots):
+                for _ in range(avalancheDots):  # Or however many per avalanche
                     av_x_e.append(x_pose[i] + np.random.normal(0, spread))
                     av_y_e.append(y_pose[i] + np.random.normal(0.5, 1.0))
+                    av_dots_e.append(ax.plot([], [], 'o', color=electronColor, markersize=3)[0])
+
                     av_x_h.append(x_pose[i] + np.random.normal(0, spread))
                     av_y_h.append(y_pose[i] + np.random.uniform(-1, 1))
+                    av_dots_h.append(ax.plot([], [], 'o', markersize=5, markerfacecolor='none', markeredgewidth=2, markeredgecolor=holeColor)[0])
+                
                 has_avalanched[i] = True
-
 
 
             # Remove or update electron
@@ -256,25 +261,19 @@ def update(frame):
 
         # Animate avalanche electrons
         for idx, dot in enumerate(av_dots_e):
-            if idx < len(av_x_e):
-                av_y_e[idx] += gainVelocityCoeff * dotVelocity
-                if av_y_e[idx] > nPlusPlusTop:
-                    dot.set_data([1000], [1000])
-                else:
-                    dot.set_data([av_x_e[idx]], [av_y_e[idx]])
-            else:
+            av_y_e[idx] += gainVelocityCoeff * dotVelocity
+            if av_y_e[idx] > nPlusPlusTop:
                 dot.set_data([1000], [1000])
+            else:
+                dot.set_data([av_x_e[idx]], [av_y_e[idx]])
 
         # Animate avalanche holes
         for idx, dot in enumerate(av_dots_h):
-            if idx < len(av_x_h):
-                av_y_h[idx] -= (dotVelocity * holeVelocityCoeff)
-                if av_y_h[idx] < pPlusPlusBottom:
-                    dot.set_data([1000], [1000])
-                else:
-                    dot.set_data([av_x_h[idx]], [av_y_h[idx]])
-            else:
+            av_y_h[idx] -= dotVelocity * holeVelocityCoeff
+            if av_y_h[idx] < pPlusPlusBottom:
                 dot.set_data([1000], [1000])
+            else:
+                dot.set_data([av_x_h[idx]], [av_y_h[idx]])
 
     return pion, line, *dotse, *dotsh, *av_dots_e, *av_dots_h
 
