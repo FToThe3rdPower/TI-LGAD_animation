@@ -9,6 +9,7 @@ from matplotlib.animation import FuncAnimation, PillowWriter
 import time
 
 
+
 # Save the animation as a GIF in the folder
 filePath = '/home/trey/Desktop/school/thesisStuff/TI-LGAD_animation/'
 
@@ -16,12 +17,20 @@ filePath = '/home/trey/Desktop/school/thesisStuff/TI-LGAD_animation/'
 # Graphics params
 numFrames = 100 #was 1000
 fps = 10
-labelIndent = 7
+labelIndent = 10 #μm, indent for the layer labels so they sit in what they label
 
-#Protons are red, Neutrons are grey, electrons are yellow, holes are blue, 
+# particle coloring
 pionColor = 'purple'
-electronColor = 'yellow'
-holeColor = 'blue'
+electronColor = 'blue'
+holeColor = 'red'
+
+## doping layer colors
+metalizationColor = "silver"
+insulationColor = "darkorange"
+nPlusPlusColor = "royalblue"
+pPlusPlusColor = "indianred"
+pPlusGainColor = "lightcoral"
+pBulkColor = "mistyrose"
 
 
 # 'Sim' parameters
@@ -31,7 +40,7 @@ width = 185 #3 px wide + 5 in-between +5 on each side
 pxPitch = 55 #μm, distance from center of one pixel to the next
 pixelGap = 5 #μm
 
-# Trench dimensions
+# Trench parameters
 numTrenches = 2
 trenchDepth = 40 #μm
 trenchWidth = 1 #μm
@@ -41,21 +50,13 @@ trenchColor = "black"
 ## layers in order from sensor 'backside' to sensor 'frontside' except for the bulk, since that requires p++ thickness apriori
 metalizationLayer = 5 #μm, thickness of the metalization layer
 metalizationContactLayer = 10 #μm, thickness of the metalization contact "layer' that extends to the n++ layer
+metalizationContactWidth = 3 #μm, width of the metalization contact
 insulationLayer = 5 #μm, thickness of the insulation layer
 nPlusPlusLayer = 5 #μm, thickness of the n++ layer
 pPlusGainLayer = 10 #μm, thickness of the p+ layer
 pPlusGainWidth = 35 #μm, width of the p+ gain implant
 pPlusPlusLayer = 5 #μm, thickness of the p++ layer
 pBulkLayer = int(thick - (pPlusPlusLayer + pPlusGainLayer + nPlusPlusLayer)) #μm, whatever's leftover after the other layers fill the 100μm
-
-## doping layer colors
-metalizationColor = "silver"
-insulationColor = "darkorange"
-nPlusPlusColor = "cadetblue"
-pPlusPlusColor = "indianred"
-pPlusGainColor = "lightcoral"
-pBulkColor = "mistyrose"
-
 
 
 
@@ -65,6 +66,7 @@ start_time = time.perf_counter()
 
 # Create a figure and axis
 fig, ax = plt.subplots()
+fig.set_size_inches(8, 6)  # Set figure size in inches
 
 # Set axis limits
 ax.set_xlim(0, width)
@@ -98,6 +100,14 @@ for pixNum in range(3):
     # Calculate left edge of the current p+ implant
     implantX = 5 + pixNum * (5 + pxPitch)
 
+    # Contact on left side of implant
+    contactLeftX = implantX
+    ax.add_patch(patches.Rectangle((contactLeftX, thick - metalizationContactLayer), metalizationContactWidth, metalizationContactLayer, color=metalizationColor))
+
+    # Contact on right side of implant
+    contactRightX = implantX + pxPitch - metalizationContactWidth
+    ax.add_patch(patches.Rectangle((contactRightX, thick - metalizationContactLayer), metalizationContactWidth, metalizationContactLayer, color=metalizationColor))
+
     # Add the p+ gain implant
     ax.add_patch(patches.Rectangle((implantX, ySpacePgain), pxPitch, pPlusGainLayer, color=pPlusGainColor))
 
@@ -120,18 +130,8 @@ for pixNum in range(3):
         ax.add_patch(patches.Rectangle((trench2X, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
 
 
-# #Draw the metal contact to the n++ layer over the insulation layer
-# for contact in range(numTrenches):
-#     #Left contact
-#     ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer)), width, metalizationContactLayer, color=metalizationColor))
-#     #Right contact 
-#     ax.add_patch(patches.Rectangle((width-metalizationContactLayer, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer)), metalizationContactLayer, nPlusPlusLayer, color=metalizationColor))
-
-
 #add the p++ as the bottom layer
 ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+pPlusGainLayer+pBulkLayer)), width, pPlusPlusLayer, color=pPlusPlusColor))
-
-
 
 
 ## doping layer labeling
@@ -187,7 +187,6 @@ def update(frame):
                 y_posh[i]=1000
             dotse[i].set_data([x_pose[i]],[y_pose[i]])
             dotsh[i].set_data([x_posh[i]],[y_posh[i]])
-    #if positions[i][0] < or positions[i][0] > 8.5:
     return pion,line#,dots
 
 # Create the animation
