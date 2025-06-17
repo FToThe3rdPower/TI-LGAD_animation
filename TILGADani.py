@@ -39,7 +39,7 @@ pBulkColor = "mistyrose"
 n_dots = 15 # number of electrons and holes to animate
 avalancheDots = 5 # number of avalanche pairs to animate per original electron
 dotVelocity = 0.6 # the drift velocity for e- in the bulk
-gainVelocityCoeff = 2 # multiplies the dotVelocity when the electron hits the gain region
+gainVelocityCoeff = 1 # multiplies the dotVelocity when the electron hits the gain region
 holeVelocityCoeff = 0.3 #how much slower the holes go
 thick = 100 # penetration depth AND sensor thickness
 width = 185 #3 px wide + 5 in-between +5 on each side
@@ -47,7 +47,7 @@ pxPitch = 55 #μm, distance from center of one pixel to the next
 pixelGap = 5 #μm
 
 ## Trench parameters
-numTrenches = 2 #single or double, your choice
+numTrenches = 1 #single or double, your choice
 trenchDepth = 40 #μm
 trenchWidth = 1 #μm
 trenchColor = "black"
@@ -175,8 +175,6 @@ for pixNum in range(3):
 
     # ---------------- End of Trench Drawing ----------------
 
-    else:
-        print("Invalid number of trenches specified. Please use 1 or 2 trenches.")
 
 #add the p++ as the bottom layer
 ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+pPlusGainLayer+pBulkLayer)), width, pPlusPlusLayer, color=pPlusPlusColor))
@@ -281,12 +279,6 @@ def update(frame):
                 has_avalanched[i] = True
 
 
-            # Remove or update electron
-            if y_pose[i] > nPlusPlusTop:
-                dotse[i].set_data([1000], [1000])  # remove electron
-            else:
-                dotse[i].set_data([x_pose[i]], [y_pose[i]])
-
             # Update hole position
             y_posh[i] -= (dotVelocity * holeVelocityCoeff)
             if y_posh[i] < pPlusPlusBottom:
@@ -294,13 +286,11 @@ def update(frame):
             else:
                 dotsh[i].set_data([x_posh[i]], [y_posh[i]])
 
-        # Animate avalanche electrons
-        for idx, dot in enumerate(av_dots_e):
-            av_y_e[idx] += gainVelocityCoeff * dotVelocity
-            if av_y_e[idx] > nPlusPlusTop:
-                dot.set_data([1000], [1000])
+            # Update or remove electron after holes, so they're drawn on top
+            if y_pose[i] > nPlusPlusTop:
+                dotse[i].set_data([1000], [1000])  # remove electron
             else:
-                dot.set_data([av_x_e[idx]], [av_y_e[idx]])
+                dotse[i].set_data([x_pose[i]], [y_pose[i]])
 
         # Animate avalanche holes
         for idx, dot in enumerate(av_dots_h):
@@ -309,6 +299,14 @@ def update(frame):
                 dot.set_data([1000], [1000])
             else:
                 dot.set_data([av_x_h[idx]], [av_y_h[idx]])
+
+        # Animate avalanche electrons after, so they're drawn on top of the holes
+        for idx, dot in enumerate(av_dots_e):
+            av_y_e[idx] += gainVelocityCoeff * dotVelocity
+            if av_y_e[idx] > nPlusPlusTop:
+                dot.set_data([1000], [1000])
+            else:
+                dot.set_data([av_x_e[idx]], [av_y_e[idx]])
 
     return pion, line, *dotse, *dotsh, *av_dots_e, *av_dots_h
 
