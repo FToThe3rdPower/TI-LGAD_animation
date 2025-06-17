@@ -12,7 +12,7 @@ import time
 
 # Save the animation as a GIF in the folder
 filePath = '/home/trey/Desktop/school/thesisStuff/TI-LGAD_animation/'
-filenameMod = '-extraSpace'
+filenameMod = ""#'-extraSpace'
 
 # Graphics params
 numFrames = 100 #was 1000
@@ -47,7 +47,7 @@ pxPitch = 55 #μm, distance from center of one pixel to the next
 pixelGap = 5 #μm
 
 ## Trench parameters
-numTrenches = 1 #single or double, your choice
+numTrenches = 2 #single or double, your choice
 trenchDepth = 40 #μm
 trenchWidth = 1 #μm
 trenchColor = "black"
@@ -98,7 +98,7 @@ ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+nPlu
 ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pBulkLayer)), width, pBulkLayer, color=pBulkColor))
 
 # Calculate the y spacing
-ySpacePgain = thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer+2)
+ySpacePgain = thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer)#+2)
 
 # 3 pixel drawing loop
 for pixNum in range(3):
@@ -212,8 +212,8 @@ av_dots_e = []
 av_dots_h = []
 
 
-# Randomly initialize starting positions and velocities for the dots
-y_pose = np.random.uniform(low=10, high=(thick-10), size=(n_dots))
+# Randomly initialize starting positions for the dots
+y_pose = np.random.uniform(low=(thick-(metalizationLayer + insulationLayer + nPlusPlusLayer + pBulkLayer)), high=(thick-(metalizationLayer + insulationLayer + nPlusPlusLayer)), size=(n_dots))
 x_pose = 100-(thick-y_pose)*0.15-0.2
 y_posh = y_pose*1
 x_posh = 100-(thick-y_posh)*0.15+0.2
