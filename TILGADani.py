@@ -1,3 +1,7 @@
+#! /usr/bin/python3
+# -*- coding: utf-8 -*-
+# Author: Trey Grijalva
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -7,6 +11,7 @@ import time
 
 # Save the animation as a GIF in the folder
 filePath = '/home/trey/Desktop/school/thesisStuff/TI-LGAD_animation/'
+
 
 # Graphics params
 numFrames = 100 #was 1000
@@ -18,28 +23,19 @@ pionColor = 'purple'
 electronColor = 'yellow'
 holeColor = 'blue'
 
+
 # 'Sim' parameters
 n_dots = 15 # number of electrons and holes to animate
 thick = 100 # penetration depth AND sensor thickness
 width = 185 #3 px wide + 5 in-between +5 on each side
 pxPitch = 55 #μm, distance from center of one pixel to the next
-
-#dummy doping layers for formatting
-#implantSizeX = 35
-#implantSizeY = 5
+pixelGap = 5 #μm
 
 # Trench dimensions
-numTrenches = 1
+numTrenches = 2
 trenchDepth = 40 #μm
 trenchWidth = 1 #μm
-trenchGap = 5 #μm
 trenchColor = "black"
-
-# name the files appropriately based on the number of trenches
-if numTrenches == 1:
-    fileName = f"{filePath}1TR-LGAD.gif"
-elif numTrenches == 2:
-    fileName = f"{filePath}2TR-LGAD.gif"
 
 ## doping layer thicknesses.
 ## layers in order from sensor 'backside' to sensor 'frontside' except for the bulk, since that requires p++ thickness apriori
@@ -54,11 +50,14 @@ pBulkLayer = int(thick - (pPlusPlusLayer + pPlusGainLayer + nPlusPlusLayer)) #μ
 
 ## doping layer colors
 metalizationColor = "silver"
-insulationColor = "olivedrab"
-nPlusPlusColor = "orange"
-pPlusPlusColor = "lightcoral"
-pPlusGainColor = "turquoise"
-pBulkColor = "cadetblue"
+insulationColor = "darkorange"
+nPlusPlusColor = "cadetblue"
+pPlusPlusColor = "indianred"
+pPlusGainColor = "lightcoral"
+pBulkColor = "mistyrose"
+
+
+
 
 
 # Record the start time using perf_counter
@@ -66,7 +65,6 @@ start_time = time.perf_counter()
 
 # Create a figure and axis
 fig, ax = plt.subplots()
-
 
 # Set axis limits
 ax.set_xlim(0, width)
@@ -80,15 +78,10 @@ ax.set_yticks(np.linspace(0, thick, 5))
 ax.set_aspect('equal')
 
 
-
 # Add a rectangular border
 border = patches.Rectangle((0, 0), width, thick, linewidth=2, edgecolor='black', facecolor='none')
 ax.add_patch(border)
 
-
-
-# (x position, y pos), xSize, ySize like
-# ax.add_patch(patches.Rectangle((55*2.5-implantSizeX/2, thick-implantSizeY), implantSizeX, implantSizeY, color='teal'))
 
 #drawing layers
 ax.add_patch(patches.Rectangle((0, thick-metalizationLayer), width, metalizationLayer, color=metalizationColor))
@@ -110,14 +103,21 @@ for pixNum in range(3):
 
     # Add trench in every gap (i.e., after every implant except the last)
     if numTrenches == 1 and pixNum < 2:
+        fileName = f"{filePath}1TR-LGAD.gif"
 
         # Position the trench in the center of the 5μm gap between implants
-        trenchX = implantX + pxPitch + (trenchGap - trenchWidth) / 2
+        trenchX = implantX + pxPitch + (pixelGap - trenchWidth) / 2
         ax.add_patch(patches.Rectangle((trenchX, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
         # 5μm sauce: https://indico.cern.ch/event/855994/contributions/3637012/attachments/1947013/3230442/RD50_19_11_Pater.pdf
         # and https://www.mdpi.com/sensors/sensors-23-06225/article_deploy/html/images/sensors-23-06225-g001.png
     
-    #elif numTrenches == 2:
+    elif numTrenches == 2 and pixNum < 2:
+        fileName = f"{filePath}2TR-LGAD.gif"
+        gapStartX = implantX + pxPitch  # Start of the 5μm gap
+        trench1X = gapStartX + 1  # First trench 1 μm into the gap
+        trench2X = trench1X + trenchWidth + 1  # Second trench after 1 μm spacing
+        ax.add_patch(patches.Rectangle((trench1X, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
+        ax.add_patch(patches.Rectangle((trench2X, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
 
 
 # #Draw the metal contact to the n++ layer over the insulation layer
