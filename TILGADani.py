@@ -37,7 +37,7 @@ pBulkColor = "mistyrose"
 
 # 'Sim' parameters
 n_dots = 15 # number of electrons and holes to animate
-avalancheDots = 5 # number of avalanche dots to animate
+avalancheDots = 10 # number of avalanche dots to animate
 dotVelocity = 0.6 # the drift velocity for e- in the bulk
 gainVelocityCoeff = 2 # multiplies the dotVelocity when the electron hits the gain region
 holeVelocityCoeff = 0.3 #how much slower the holes go
@@ -46,8 +46,8 @@ width = 185 #3 px wide + 5 in-between +5 on each side
 pxPitch = 55 #μm, distance from center of one pixel to the next
 pixelGap = 5 #μm
 
-# Trench parameters
-numTrenches = 1 #single or double, your choice
+## Trench parameters
+numTrenches = 2 #single or double, your choice
 trenchDepth = 40 #μm
 trenchWidth = 1 #μm
 trenchColor = "black"
@@ -174,7 +174,7 @@ av_x_h, av_y_h = [], []  # holes
 
 # Initialize the avalanche dots for electrons and holes
 av_dots_e = [ax.plot([], [], 'o', color=electronColor, markersize=3)[0] for _ in range(avalancheDots)]
-av_dots_h = [ax.plot([], [], 'o', markersize=5, markerfacecolor='none', markeredgewidth=2, markeredgecolor=holeColor)[0] for _ in range(n_dots)]
+av_dots_h = [ax.plot([], [], 'o', markersize=5, markerfacecolor='none', markeredgewidth=2, markeredgecolor=holeColor)[0] for _ in range(avalancheDots)]
 
 
 # Randomly initialize starting positions and velocities for the dots
@@ -209,49 +209,55 @@ def update(frame):
     y_data.append(y)
     pion.set_data([x], [y])
     line.set_data(x_data, y_data)
-
+    
     if frame < 5:
         for i in range(n_dots):
             dotse[i].set_data([1000], [1000])  # hide electrons
             dotsh[i].set_data([1000], [1000])  # hide holes
     else:
+        spread = 2  # wider spread for visibility
         for i in range(n_dots):
-            # Determine if electron is in the p+ gain layer
-            if pPlusGainBottom <= y_pose[i] <= pPlusGainTop:
-                velocity_e = gainVelocityCoeff * dotVelocity  # faster drift in gain layer
+            # Store previous y-position
+            prev_y = y_pose[i]
+
+            # Update position based on region
+            if pPlusGainBottom <= prev_y <= pPlusGainTop:
+                velocity_e = gainVelocityCoeff * dotVelocity
             else:
-                velocity_e = dotVelocity  # normal drift elsewhere
+                velocity_e = dotVelocity
 
-            # Update electron position
-            y_pose[i] += velocity_e
+            y_pose[i] += velocity_e  # Apply velocity
 
+            #check if e- is inside the p+ region
+            inside_gain_region = (pPlusGainBottom <= y_pose[i] <= pPlusGainTop)
+
+            if inside_gain_region and not has_avalanched[i]:
+                for _ in range(avalancheDots):
+                    av_x_e.append(x_pose[i] + np.random.normal(0, spread))
+                    av_y_e.append(y_pose[i] + np.random.normal(0.5, 1.0))
+                    av_x_h.append(x_pose[i] + np.random.normal(0, spread))
+                    av_y_h.append(y_pose[i] + np.random.uniform(-1, 1))
+                has_avalanched[i] = True
+
+
+
+            # Remove or update electron
             if y_pose[i] > nPlusPlusTop:
                 dotse[i].set_data([1000], [1000])  # remove electron
             else:
                 dotse[i].set_data([x_pose[i]], [y_pose[i]])
 
-            # Update hole
-            y_posh[i] -= (dotVelocity*holeVelocityCoeff)  # holes drift slower
+            # Update hole position
+            y_posh[i] -= (dotVelocity * holeVelocityCoeff)
             if y_posh[i] < pPlusPlusBottom:
                 dotsh[i].set_data([1000], [1000])  # remove hole
             else:
                 dotsh[i].set_data([x_posh[i]], [y_posh[i]])
 
-            # Avalanche generation when entering gain layer
-            if (pPlusGainBottom <= y_pose[i] <= pPlusGainTop) and not has_avalanched[i]:
-                n_spawns = np.random.randint(1, (avalancheDots+1))
-                for _ in range(n_spawns):
-                    av_x_e.append(x_pose[i] + np.random.uniform(-1, 1))
-                    av_y_e.append(y_pose[i] + np.random.uniform(-1, 1))
-                    av_x_h.append(x_pose[i] + np.random.uniform(-1, 1))
-                    av_y_h.append(y_pose[i] + np.random.uniform(-1, 1))
-                has_avalanched[i] = True
-
-
         # Animate avalanche electrons
         for idx, dot in enumerate(av_dots_e):
             if idx < len(av_x_e):
-                av_y_e[idx] += gainVelocityCoeff * dotVelocity  # faster drift in gain layer
+                av_y_e[idx] += gainVelocityCoeff * dotVelocity
                 if av_y_e[idx] > nPlusPlusTop:
                     dot.set_data([1000], [1000])
                 else:
@@ -262,7 +268,7 @@ def update(frame):
         # Animate avalanche holes
         for idx, dot in enumerate(av_dots_h):
             if idx < len(av_x_h):
-                av_y_h[idx] -= (dotVelocity*holeVelocityCoeff)  # holes drift slower
+                av_y_h[idx] -= (dotVelocity * holeVelocityCoeff)
                 if av_y_h[idx] < pPlusPlusBottom:
                     dot.set_data([1000], [1000])
                 else:
@@ -270,9 +276,7 @@ def update(frame):
             else:
                 dot.set_data([1000], [1000])
 
-
     return pion, line, *dotse, *dotsh, *av_dots_e, *av_dots_h
-
 
 
 # Create the animation
