@@ -37,7 +37,7 @@ pBulkColor = "mistyrose"
 
 # 'Sim' parameters
 n_dots = 15 # number of electrons and holes to animate
-avalancheDots = 10 # number of avalanche pairs to animate per original electron
+avalancheDots = 5 # number of avalanche pairs to animate per original electron
 dotVelocity = 0.6 # the drift velocity for e- in the bulk
 gainVelocityCoeff = 2 # multiplies the dotVelocity when the electron hits the gain region
 holeVelocityCoeff = 0.3 #how much slower the holes go
@@ -47,7 +47,7 @@ pxPitch = 55 #μm, distance from center of one pixel to the next
 pixelGap = 5 #μm
 
 ## Trench parameters
-numTrenches = 1 #single or double, your choice
+numTrenches = 2 #single or double, your choice
 trenchDepth = 40 #μm
 trenchWidth = 1 #μm
 trenchColor = "black"
