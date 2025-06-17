@@ -41,7 +41,7 @@ pxPitch = 55 #μm, distance from center of one pixel to the next
 pixelGap = 5 #μm
 
 # Trench parameters
-numTrenches = 1
+numTrenches = 2
 trenchDepth = 40 #μm
 trenchWidth = 1 #μm
 trenchColor = "black"
@@ -94,7 +94,7 @@ ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+nPlu
 #calculate the y spacing once
 ySpacePgain = thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer)
 
-# 3 pixel loop
+# 3 pixel drawing loop
 for pixNum in range(3):
 
     # Calculate left edge of the current p+ implant
@@ -169,6 +169,11 @@ line, = ax.plot([], [], lw=2, color=pionColor)
 # Lists to store the dot's path (history of positions)
 x_data, y_data = [], []
 
+# defining gain region par particle acceleration
+pPlusGainTop = thick - (metalizationLayer + insulationLayer + nPlusPlusLayer)
+pPlusGainBottom = pPlusGainTop - pPlusGainLayer
+
+
 # Function to update the position of the purple dot
 def update(frame):
     x = 100 - frame * 3  # Move the dot horizontally
@@ -184,15 +189,22 @@ def update(frame):
             dotsh[i].set_data([1000], [1000])  # hide holes
     else:
         for i in range(n_dots):
-            # Update electron
-            y_pose[i] += 0.6  # electrons go downward
+            # Determine if electron is in the p+ gain layer
+            if pPlusGainBottom <= y_pose[i] <= pPlusGainTop:
+                velocity_e = 1.2  # faster drift in gain layer
+            else:
+                velocity_e = 0.6  # normal drift elsewhere
+
+            # Update electron position
+            y_pose[i] += velocity_e
+
             if y_pose[i] > nPlusPlusTop:
                 dotse[i].set_data([1000], [1000])  # remove electron
             else:
                 dotse[i].set_data([x_pose[i]], [y_pose[i]])
 
             # Update hole
-            y_posh[i] -= 0.2  # holes go upward
+            y_posh[i] -= 0.2
             if y_posh[i] < pPlusPlusBottom:
                 dotsh[i].set_data([1000], [1000])  # remove hole
             else:
