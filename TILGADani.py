@@ -12,7 +12,7 @@ import time
 
 # Save the animation as a GIF in the folder
 filePath = '/home/trey/Desktop/school/thesisStuff/TI-LGAD_animation/'
-
+filenameMod = '-extraSpace'
 
 # Graphics params
 numFrames = 100 #was 1000
@@ -98,7 +98,7 @@ ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+nPlu
 ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pBulkLayer)), width, pBulkLayer, color=pBulkColor))
 
 # Calculate the y spacing
-ySpacePgain = thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer)
+ySpacePgain = thick-(metalizationLayer+insulationLayer+nPlusPlusLayer+pPlusGainLayer+2)
 
 # 3 pixel drawing loop
 for pixNum in range(3):
@@ -106,42 +106,77 @@ for pixNum in range(3):
     # Calculate left edge of the current p+ implant
     implantX = 5 + pixNum * (5 + pxPitch)
 
-    # Contact on left side of implant
+    # Draw metalization contacts
     contactLeftX = implantX
-    ax.add_patch(patches.Rectangle((contactLeftX, thick - metalizationContactLayer), metalizationContactWidth, metalizationContactLayer, color=metalizationColor))
-
-    # Contact on right side of implant
     contactRightX = implantX + pxPitch - metalizationContactWidth
+    ax.add_patch(patches.Rectangle((contactLeftX, thick - metalizationContactLayer), metalizationContactWidth, metalizationContactLayer, color=metalizationColor))
     ax.add_patch(patches.Rectangle((contactRightX, thick - metalizationContactLayer), metalizationContactWidth, metalizationContactLayer, color=metalizationColor))
 
     # Add the p+ gain implant
     ax.add_patch(patches.Rectangle((implantX, ySpacePgain), pxPitch, pPlusGainLayer, color=pPlusGainColor))
 
-    # Add trench in every gap (i.e., after every implant except the last)
-    if numTrenches == 1 and pixNum < 2:
-        # naming and titling
-        fileName = f"{filePath}1TR-LGAD.gif"
-        plt.title("Single trench LGAD")
-        ax.annotate("Trench", xy=(trenchLabelX, trenchLabelY), fontsize=10, ha='right', va='bottom', color='black')
-        ax.annotate("", xy=(trenchLabelX+12, trenchLabelY), xytext=(trenchLabelX, trenchLabelY), arrowprops=dict(arrowstyle="->", color='black'))
+    # ---------------- Trench Drawing ----------------
 
-        # Position the trench in the center of the 5μm gap between implants
-        trenchX = implantX + pxPitch + (pixelGap - trenchWidth) / 2
-        ax.add_patch(patches.Rectangle((trenchX, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
-        # 5μm sauce: https://indico.cern.ch/event/855994/contributions/3637012/attachments/1947013/3230442/RD50_19_11_Pater.pdf
-        # and https://www.mdpi.com/sensors/sensors-23-06225/article_deploy/html/images/sensors-23-06225-g001.png
-    
-    elif numTrenches == 2 and pixNum < 2:
-        fileName = f"{filePath}2TR-LGAD.gif"
-        plt.title("Double trench LGAD")
-        ax.annotate("Trenches", xy=(trenchLabelX, trenchLabelY), fontsize=10, ha='right', va='bottom', color='black')
-        ax.annotate("", xy=(trenchLabelX+11, trenchLabelY), xytext=(trenchLabelX, trenchLabelY), arrowprops=dict(arrowstyle="->", color='black'))
+    # Add inter-pixel trench(s)
+    if pixNum < 2:
         gapStartX = implantX + pxPitch  # Start of the 5μm gap
-        trench1X = gapStartX + 1  # First trench 1 μm into the gap
-        trench2X = trench1X + trenchWidth + 1  # Second trench after 1 μm spacing
-        ax.add_patch(patches.Rectangle((trench1X, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
-        ax.add_patch(patches.Rectangle((trench2X, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
 
+        if numTrenches == 1:
+            fileName = f"{filePath}1TR-LGAD{filenameMod}.gif"
+            plt.title("Single trench LGAD")
+            ax.annotate("Trench", xy=(trenchLabelX, trenchLabelY), fontsize=10, ha='right', va='bottom', color='black')
+            ax.annotate("", xy=(trenchLabelX+12, trenchLabelY), xytext=(trenchLabelX, trenchLabelY), arrowprops=dict(arrowstyle="->", color='black'))
+
+            # Center a single trench in the gap
+            trenchX = gapStartX + (pixelGap - trenchWidth) / 2
+            ax.add_patch(patches.Rectangle((trenchX, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
+
+        elif numTrenches == 2:
+            fileName = f"{filePath}2TR-LGAD{filenameMod}.gif"
+            plt.title("Double trench LGAD")
+            ax.annotate("Trenches", xy=(trenchLabelX, trenchLabelY), fontsize=10, ha='right', va='bottom', color='black')
+            ax.annotate("", xy=(trenchLabelX+11, trenchLabelY), xytext=(trenchLabelX, trenchLabelY), arrowprops=dict(arrowstyle="->", color='black'))
+
+            # Place two trenches in the 5μm gap
+            trench1X = gapStartX + 1  # 1μm from start of gap
+            trench2X = trench1X + trenchWidth + 1  # 1μm spacing
+            ax.add_patch(patches.Rectangle((trench1X, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
+            ax.add_patch(patches.Rectangle((trench2X, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
+
+    # ---------------- Edge Trench Drawing ----------------
+
+    # Left edge of first pixel
+    if pixNum == 0:
+        edgeX = implantX - pixelGap  # Start of leftmost gap
+
+        if numTrenches == 1:
+            trenchX = edgeX + (pixelGap - trenchWidth) / 2
+            ax.add_patch(patches.Rectangle((trenchX, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
+
+        elif numTrenches == 2:
+            trench1X = edgeX + 1
+            trench2X = trench1X + trenchWidth + 1
+            ax.add_patch(patches.Rectangle((trench1X, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
+            ax.add_patch(patches.Rectangle((trench2X, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
+
+    # Right edge of last pixel
+    if pixNum == 2:
+        edgeX = implantX + pxPitch  # Start of rightmost gap
+
+        if numTrenches == 1:
+            trenchX = edgeX + (pixelGap - trenchWidth) / 2
+            ax.add_patch(patches.Rectangle((trenchX, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
+
+        elif numTrenches == 2:
+            trench1X = edgeX + 1
+            trench2X = trench1X + trenchWidth + 1
+            ax.add_patch(patches.Rectangle((trench1X, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
+            ax.add_patch(patches.Rectangle((trench2X, thick - trenchDepth), trenchWidth, trenchDepth, color=trenchColor))
+
+    # ---------------- End of Trench Drawing ----------------
+
+    else:
+        print("Invalid number of trenches specified. Please use 1 or 2 trenches.")
 
 #add the p++ as the bottom layer
 ax.add_patch(patches.Rectangle((0, thick-(metalizationLayer+insulationLayer+pPlusGainLayer+pBulkLayer)), width, pPlusPlusLayer, color=pPlusPlusColor))
